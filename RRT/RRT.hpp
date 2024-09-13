@@ -82,7 +82,7 @@ namespace RRT
       bool foundSolution = false;
 
       std::cout << std::fixed << std::setprecision(3);
-      std::ofstream graph("graph.txt");
+      std::ofstream graph("results/graph.txt");
 
       for (size_t i = 0; i < K; i++)
       {
@@ -116,7 +116,7 @@ namespace RRT
       }
       graph.close();
 
-      std::ofstream path("path.txt");
+      std::ofstream path("results/path.txt");
 
       std::vector<Vertex<T> *> solution;
 

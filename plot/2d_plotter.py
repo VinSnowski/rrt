@@ -55,9 +55,9 @@ def parse_path_file(filename: str) -> Tuple[List[Any]]:
 
 if __name__ == "__main__":
     
-    heads_graph, tails_graph = parse_graph_file('results/graph.txt')
+    heads_graph, tails_graph = parse_graph_file("RRT/results/graph.txt")
 
-    heads_path, tails_path = parse_path_file('results/path.txt')
+    heads_path, tails_path = parse_path_file("RRT/results/path.txt")
 
     plt.figure(figsize=(10, 8))
     for h, t in zip(heads_graph, tails_graph):
@@ -65,6 +65,7 @@ if __name__ == "__main__":
     for h, t in zip(heads_path, tails_path):
         plt.plot([h[0], t[0]], [h[1],t[1]], '-ro', markersize=0.05)
 
+    # plot obstacles. Hardcoded for the moment!
     plt.plot([1,3],[1,1], '-', color="black")
     plt.plot([3,3],[1,3], '-', color="black")
     plt.plot([3,1],[3,3], '-', color="black")
