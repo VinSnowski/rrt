@@ -8,6 +8,7 @@
 #include <cmath>
 #include <fstream>
 #include <algorithm>
+#include <memory>
 #include "Point2D.hpp"
 #include "Obstacle.hpp"
 
@@ -28,6 +29,7 @@ namespace RRT
     T state;
     Vertex<T> *parent;
 
+    Vertex() = default;
     Vertex(T val) : state(val), parent(nullptr) {}
   };
 
@@ -35,34 +37,32 @@ namespace RRT
   class RRT
   {
   private:
-    std::vector<Vertex<T> *> graph;
+    std::vector<std::unique_ptr<Vertex<T>>> graph;
 
     // Get the nearest vertex to a generated state
     Vertex<T> *getNearestNeighbor(const T &state)
     {
       double min_dist{std::numeric_limits<double>::max()};
       Vertex<T> *nearest = nullptr;
-      for (Vertex<T> *v : this->graph)
+      for (const auto &v : this->graph)
       {
         double distance = calculateDistanceFromTo<T>(state, v->state);
 
         if (distance < min_dist)
         {
           min_dist = distance;
-          nearest = v;
+          nearest = v.get();
         }
       }
       return nearest;
     }
 
-    // Get a new vertex originating from nearest incrementing it in the direction of 'state'
-    Vertex<T> *getNewVertex(const T &state, Vertex<T> *nearest)
+    // Generates a new vertex originating from nearest incrementing it in the direction of 'state'
+    std::unique_ptr<Vertex<T>> generateNewVertex(const T &state, const Vertex<T> &nearest)
     {
-      double distance = calculateDistanceFromTo<T>(state, nearest->state);
-
+      double distance = calculateDistanceFromTo<T>(state, nearest.state);
       double step = std::min(1.0, stepLength / distance);
-
-      return new Vertex(nearest->state + (state - nearest->state) * step);
+      return std::make_unique<Vertex<T>>(Vertex(nearest.state + (state - nearest.state) * step));
     }
 
   public:
@@ -73,40 +73,37 @@ namespace RRT
 
     // Run the algorithm and try to obtain a path from start to goal
     // Results are stored in "graph.txt" and "path.txt"
-    std::vector<Vertex<T> *> run(Vertex<T> *start, Vertex<T> *goal, const std::vector<Obstacle<T>> obstacles, bool stopEarly)
+    std::vector<Vertex<T> *> run(Vertex<T> startVertex, Vertex<T> goalVertex, const std::vector<Obstacle<T>> obstacles, bool stopEarly)
     {
-      this->graph.push_back(start);
-
-      Vertex<T> *final_vertex = nullptr;
-
+      this->graph.push_back(std::make_unique<Vertex<T>>(startVertex));
+      Vertex<T> *finalVertexPtr = nullptr;
       bool foundSolution = false;
 
       std::cout << std::fixed << std::setprecision(3);
-      std::ofstream graph("results/graph.txt");
+      std::ofstream graph("graph.txt");
 
       for (size_t i = 0; i < K; i++)
       {
-        Vertex<T> *new_vertex = nullptr;
-        Vertex<T> *nearest_vertex = nullptr;
+        std::unique_ptr<Vertex<T>> newVertexPtr = nullptr;
+        Vertex<T> *nearestVertexPtr = nullptr;
 
         while (true)
         {
-          auto random_state = generateRandomValue<T>();
-          nearest_vertex = getNearestNeighbor(random_state);
-          new_vertex = getNewVertex(random_state, nearest_vertex);
-          if (!isColliding(obstacles, nearest_vertex->state, new_vertex->state))
+          auto randomState = generateRandomValue<T>();
+          nearestVertexPtr = getNearestNeighbor(randomState);
+          newVertexPtr = generateNewVertex(randomState, *nearestVertexPtr);
+          if (!isColliding(obstacles, nearestVertexPtr->state, newVertexPtr->state))
             break;
         }
 
-        this->graph.push_back(new_vertex);
-        new_vertex->parent = nearest_vertex;
+        this->graph.push_back(std::move(newVertexPtr));
+        this->graph.back()->parent = nearestVertexPtr;
+        graph << this->graph.back()->state << "-" << nearestVertexPtr->state << "\n";
 
-        graph << new_vertex->state << "-" << nearest_vertex->state << "\n";
-
-        if (!foundSolution && calculateDistanceFromTo<T>(new_vertex->state, goal->state) < stepLength)
+        if (!foundSolution && calculateDistanceFromTo<T>(this->graph.back()->state, goalVertex.state) < stepLength)
         {
           std::cout << "Found a path with " << i << " iterations" << std::endl;
-          final_vertex = new_vertex;
+          finalVertexPtr = this->graph.back().get();
           foundSolution = true;
           if (stopEarly)
           {
@@ -116,20 +113,18 @@ namespace RRT
       }
       graph.close();
 
-      std::ofstream path("results/path.txt");
-
+      std::ofstream path("path.txt");
       std::vector<Vertex<T> *> solution;
-
       if (foundSolution)
       {
-        while (final_vertex != nullptr)
+        while (finalVertexPtr != nullptr)
         {
-          solution.push_back(final_vertex);
-          path << final_vertex->state << "-";
-          final_vertex = final_vertex->parent;
+          // std::cout << finalVertexPtr->state << std::endl;
+          solution.push_back(finalVertexPtr);
+          path << finalVertexPtr->state << "-";
+          finalVertexPtr = finalVertexPtr->parent;
         }
       }
-
       path.close();
       return solution;
     }

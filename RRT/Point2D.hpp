@@ -8,6 +8,7 @@ struct Point2D
   double x;
   double y;
 
+  Point2D() = default;
   Point2D(double x, double y) : x(x), y(y) {}
 
   Point2D operator*(const double scalar) const

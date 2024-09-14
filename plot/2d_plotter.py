@@ -55,9 +55,9 @@ def parse_path_file(filename: str) -> Tuple[List[Any]]:
 
 if __name__ == "__main__":
     
-    heads_graph, tails_graph = parse_graph_file("RRT/results/graph.txt")
+    heads_graph, tails_graph = parse_graph_file("RRT/graph.txt")
 
-    heads_path, tails_path = parse_path_file("RRT/results/path.txt")
+    heads_path, tails_path = parse_path_file("RRT/path.txt")
 
     plt.figure(figsize=(10, 8))
     for h, t in zip(heads_graph, tails_graph):
@@ -86,3 +86,4 @@ if __name__ == "__main__":
     plt.ylabel('Y-axis')
     plt.grid(True)
     plt.axis('equal')
+    plt.show()
