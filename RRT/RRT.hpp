@@ -58,11 +58,11 @@ namespace RRT
     }
 
     // Generates a new vertex originating from nearest incrementing it in the direction of 'state'
-    std::unique_ptr<Vertex<T>> generateNewVertex(const T &state, const Vertex<T> &nearest)
+    Vertex<T> generateNewVertex(const T &state, const Vertex<T> &nearest)
     {
       double distance = calculateDistanceFromTo<T>(state, nearest.state);
       double step = std::min(1.0, stepLength / distance);
-      return std::make_unique<Vertex<T>>(Vertex(nearest.state + (state - nearest.state) * step));
+      return Vertex(nearest.state + (state - nearest.state) * step);
     }
 
   public:
@@ -79,24 +79,24 @@ namespace RRT
       Vertex<T> *finalVertexPtr = nullptr;
       bool foundSolution = false;
 
-      std::cout << std::fixed << std::setprecision(3);
       std::ofstream graph("graph.txt");
+      graph << std::fixed << std::setprecision(3);
 
       for (size_t i = 0; i < K; i++)
       {
-        std::unique_ptr<Vertex<T>> newVertexPtr = nullptr;
+        Vertex<T> newVertex;
         Vertex<T> *nearestVertexPtr = nullptr;
 
         while (true)
         {
           auto randomState = generateRandomValue<T>();
           nearestVertexPtr = getNearestNeighbor(randomState);
-          newVertexPtr = generateNewVertex(randomState, *nearestVertexPtr);
-          if (!isColliding(obstacles, nearestVertexPtr->state, newVertexPtr->state))
+          newVertex = generateNewVertex(randomState, *nearestVertexPtr);
+          if (!isColliding(obstacles, nearestVertexPtr->state, newVertex.state))
             break;
         }
 
-        this->graph.push_back(std::move(newVertexPtr));
+        this->graph.push_back(std::make_unique<Vertex<T>>(newVertex));
         this->graph.back()->parent = nearestVertexPtr;
         graph << this->graph.back()->state << "-" << nearestVertexPtr->state << "\n";
 
@@ -114,6 +114,7 @@ namespace RRT
       graph.close();
 
       std::ofstream path("path.txt");
+      path << std::fixed << std::setprecision(3);
       std::vector<Vertex<T> *> solution;
       if (foundSolution)
       {
